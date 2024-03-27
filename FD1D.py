@@ -58,21 +58,22 @@ if __name__ == "__main__":
     # Parameters
     p = {
         # Grid
-        'x': np.linspace(1e-3, 1, 50)**2  # Example non-equispaced grid
+        # 'x': np.linspace(1e-2, 1, 50)**2  # Example non-equispaced grid
+        'x': np.linspace(1e-5, 1, 50) # Equispaced grid
         ,
         # Polar coordinates # 0: Cartesian, 1: Cylinder, 2: Spherical
         'polar': 1
         ,
         # Boundary conditions
         'bc_left': { 
-            'type': 'dirichlet',
-            'k': lambda u, t: 0.1,   # Can be time-dependent
-            'f': lambda t: np.sin(t)  # Example time-dependent f
+            'type': 'neumann',
+            'k': lambda u, t: 0,   # Can be time-dependent
+            'f': lambda t: 0  # Example time-dependent f
         },
         'bc_right': { 
             'type': 'neumann',
-            'k': lambda u, t: 0.1,   # Can be time-dependent
-            'f': lambda t: np.sin(t)  # Example time-dependent f
+            'k': lambda u, t: 1 - u,   # Can be time-dependent
+            'f': lambda t: 0  # Example time-dependent f
         },
         # Initial condition
         'ic': lambda x: 0*x
