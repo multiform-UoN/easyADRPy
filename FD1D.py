@@ -2,6 +2,20 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
+def mygradient(f, x, dim):
+    """Redefines np.gradient for polar coordinates
+
+    Args:
+        f: Array representing the function values.
+        x: Array representing the grid points.
+        dim: Dimension of the non-radial coordinates
+
+    Returns:
+        dfdx: Array representing the gradient of the function.
+    """
+    dfdx = np.gradient(f*x**dim, x)/x**dim
+    return dfdx
+
 def L(t, u, p):
     """PDE Operator L(u) = - D(u)*d^2u/dx^2 + V(u)*du/dx + R(u)*u.
 
@@ -34,7 +48,7 @@ def L(t, u, p):
     flux = -p['D'](u, t)*dudx + p['V'](u, t)*u  # Time-dependent D and V
 
     # Compute the right-hand side  
-    dudt = -np.gradient(flux, x) + p['R'](u, t)*u  # Time-dependent R
+    dudt = -mygradient(flux, x, p['polar']) + p['R'](u, t)*u  # Time-dependent R
 
 
     return dudt
@@ -44,7 +58,10 @@ if __name__ == "__main__":
     # Parameters
     p = {
         # Grid
-        'x': np.linspace(0, 1, 50)**2  # Example non-equispaced grid
+        'x': np.linspace(1e-3, 1, 50)**2  # Example non-equispaced grid
+        ,
+        # Polar coordinates # 0: Cartesian, 1: Cylinder, 2: Spherical
+        'polar': 1
         ,
         # Boundary conditions
         'bc_left': { 
