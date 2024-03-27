@@ -2,7 +2,9 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 
-def mygradient(f, x, dim):
+TOL = 1e-6
+
+def divergence(f, x, dim):
     """Redefines np.gradient for polar coordinates
 
     Args:
@@ -13,7 +15,13 @@ def mygradient(f, x, dim):
     Returns:
         dfdx: Array representing the gradient of the function.
     """
-    dfdx = np.gradient(f*x**dim, x)/x**dim
+    dfdx = np.gradient(f, x, edge_order=2)
+    if x[0]<TOL:
+        dfdx[1:] += dim*f[1:]/x[1:]
+        dfdx[0] += dim*dfdx[0]
+    else:
+        dfdx += dim*f/x
+    print(dfdx)
     return dfdx
 
 def L(t, u, p):
@@ -36,22 +44,27 @@ def L(t, u, p):
         u[-1] = p['bc_right']['f'](t)  # Time-dependent f
 
     # Compute the first spatial derivative 
-    dudx = np.gradient(u, x)
+    rhs = np.gradient(u, x, edge_order=2)
 
     # Impose Neumann or Robin boundary conditions 
     if p['bc_left']['type'] == 'neumann':
-        dudx[0] = p['bc_left']['k'](u[0], t) + p['bc_left']['f'](t)  # Time-dependent k and f
+        rhs[0] = p['bc_left']['k'](u[0], t) + p['bc_left']['f'](t)  # Time-dependent k and f
     if p['bc_right']['type'] == 'neumann':
-        dudx[-1] = p['bc_right']['k'](u[-1], t) + p['bc_right']['f'](t)  # Time-dependent k and f
+        rhs[-1] = p['bc_right']['k'](u[-1], t) + p['bc_right']['f'](t)  # Time-dependent k and f
 
     # Calculate the flux
-    flux = -p['D'](u, t)*dudx + p['V'](u, t)*u  # Time-dependent D and V
+    flux = -p['D'](u, t, x)*rhs + p['V'](u, t, x)*u  # Time-dependent D and V
 
     # Compute the right-hand side  
-    dudt = -mygradient(flux, x, p['polar']) + p['R'](u, t)*u  # Time-dependent R
+    rhs = -divergence(flux, x, p['polar']) + p['R'](u, t, x)  # Time-dependent R
 
+    # Impose Dirichlet boundary conditions
+    if p['bc_left']['type'] == 'dirichlet':
+        rhs[0] = 0        
+    if p['bc_right']['type'] == 'dirichlet':
+        rhs[-1] = 0
 
-    return dudt
+    return rhs
 
 
 if __name__ == "__main__":
@@ -62,29 +75,29 @@ if __name__ == "__main__":
         ,
         # Grid
         # 'x': np.linspace(1e-2, 1, 50)**2  # Example non-equispaced grid
-        'x': np.linspace(1e-5, 1, 50) # Equispaced grid
+        'x': np.linspace(0, 1, 20) # Equispaced grid
         ,
         # Polar coordinates # 0: Cartesian, 1: Cylinder, 2: Spherical
         'polar': 1
         ,
         # Boundary conditions
         'bc_left': { 
-            'type': 'neumann',
+            'type': 'dirichlet',
             'k': lambda u, t: 0,   # Can be time-dependent
             'f': lambda t: 0  # Example time-dependent f
         },
         'bc_right': { 
-            'type': 'neumann',
-            'k': lambda u, t: 1 - u,   # Can be time-dependent
+            'type': 'dirichlet',
+            'k': lambda u, t: 1,   # Can be time-dependent
             'f': lambda t: 0  # Example time-dependent f
         },
         # Initial condition
         'ic': lambda x: 0*x
         ,
         # Physical parameters
-        'D': lambda u, t: 1,   # Example time-dependent D
-        'V': lambda u, t: np.sin(2*np.pi*t),        # Example time-dependent V 
-        'R': lambda u, t: 0               # Example time-dependent R 
+        'D': lambda u, t, x: 1,   # Example time-dependent D
+        'V': lambda u, t, x: 0,        # Example time-dependent V 
+        'R': lambda u, t, x: x**2               # Example time-dependent R 
     }
 
     # Grid spacing
