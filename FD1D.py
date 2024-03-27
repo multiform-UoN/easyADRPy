@@ -57,6 +57,9 @@ def L(t, u, p):
 if __name__ == "__main__":
     # Parameters
     p = {
+        # Time
+        't': np.linspace(0, 1.0, 10)  # Times at which the solution is evaluated and stored
+        ,
         # Grid
         # 'x': np.linspace(1e-2, 1, 50)**2  # Example non-equispaced grid
         'x': np.linspace(1e-5, 1, 50) # Equispaced grid
@@ -79,16 +82,14 @@ if __name__ == "__main__":
         'ic': lambda x: 0*x
         ,
         # Physical parameters
-        'D': lambda u, t: 1 + 0.2*np.cos(t),   # Example time-dependent D
-        'V': lambda u, t: 0.1 - 0.05*t,        # Example time-dependent V 
-        'R': lambda u, t: -0.1*u               # Example time-dependent R 
+        'D': lambda u, t: 1,   # Example time-dependent D
+        'V': lambda u, t: np.sin(2*np.pi*t),        # Example time-dependent V 
+        'R': lambda u, t: 0               # Example time-dependent R 
     }
 
     # Grid spacing
     x = p['x']
-    
-    # Time span and plot interval
-    t = np.linspace(0, 1.0, 10)  # Times at which the solution is evaluated and stored
+    t = p['t']
 
     # Solve the heat equation
     try:
