@@ -37,20 +37,8 @@ def L(t, u, p):
     """
     x = p['x']
     
-    # Impose Dirichlet boundary conditions
-    if p['bc_left']['type'] == 'dirichlet':
-        u[0] = p['bc_left']['f'](t)  # Time-dependent f
-    if p['bc_right']['type'] == 'dirichlet':
-        u[-1] = p['bc_right']['f'](t)  # Time-dependent f
-
     # Compute the first spatial derivative 
     rhs = np.gradient(u, x, edge_order=2)
-
-    # Impose Neumann or Robin boundary conditions 
-    if p['bc_left']['type'] == 'neumann':
-        rhs[0] = p['bc_left']['k'](u[0], t) + p['bc_left']['f'](t)  # Time-dependent k and f
-    if p['bc_right']['type'] == 'neumann':
-        rhs[-1] = p['bc_right']['k'](u[-1], t) + p['bc_right']['f'](t)  # Time-dependent k and f
 
     # Calculate the flux
     flux = -p['D'](u, t, x)*rhs + p['V'](u, t, x)*u  # Time-dependent D and V
@@ -58,11 +46,11 @@ def L(t, u, p):
     # Compute the right-hand side  
     rhs = -divergence(flux, x, p['polar']) + p['R'](u, t, x)  # Time-dependent R
 
-    # Impose Dirichlet boundary conditions
-    if p['bc_left']['type'] == 'dirichlet':
-        rhs[0] = 0        
-    if p['bc_right']['type'] == 'dirichlet':
-        rhs[-1] = 0
+    # Impose boundary conditions
+    dxL = x[1] - x[0]
+    dxR = x[-1] - x[-2]
+    rhs[0] = rhs[1] * (p['bc_left']['d'](t) - p['bc_left']['df'](u[0],t)*dxL )/(p['bc_left']['d'](t) - dxL*p['bc_left']['k'](t))
+    rhs[-1] = rhs[-2] * (p['bc_right']['d'](t) + p['bc_right']['df'](u[-1],t)*dxR )/(p['bc_right']['d'](t) + dxR*p['bc_right']['k'](t))
 
     return rhs
 
@@ -78,21 +66,24 @@ if __name__ == "__main__":
         'x': np.linspace(0, 1, 20) # Equispaced grid
         ,
         # Polar coordinates # 0: Cartesian, 1: Cylinder, 2: Spherical
-        'polar': 1
+        'polar': 0
         ,
         # Boundary conditions
+        # d u' + k u = f(u,t)
+        # NOTE: the dependences below are implemented neglecting time derivatives terms so works only for small gradients in time
+        # Basically it only works for constant coefficients (f goes away when taking the time derivative)
         'bc_left': { 
-            'type': 'dirichlet',
-            'k': lambda u, t: 0,   # Can be time-dependent
-            'f': lambda t: 0  # Example time-dependent f
+            'd': lambda t: 0,   # Neumann coefficient, Can be time-dependent
+            'k': lambda t: 1,   # Dirichlet coefficient, Can be time-dependent
+            'df': lambda u, t: 0, # Non-linear forcing coefficient, Can be time-dependent
         },
         'bc_right': { 
-            'type': 'dirichlet',
-            'k': lambda u, t: 1,   # Can be time-dependent
-            'f': lambda t: 0  # Example time-dependent f
+            'd': lambda t: 1,   # Neumann coefficient, Can be time-dependent
+            'k': lambda t: 0,   # Dirichlet coefficient, Can be time-dependent
+            'df': lambda u, t: 0, # Non-linear forcing coefficient, Can be time-dependent
         },
         # Initial condition
-        'ic': lambda x: 0*x
+        'ic': lambda x: x>0
         ,
         # Physical parameters
         'D': lambda u, t, x: 1,   # Example time-dependent D
