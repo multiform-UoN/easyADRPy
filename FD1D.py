@@ -21,7 +21,7 @@ def divergence(f, x, dim):
         dfdx[0] += dim*dfdx[0]
     else:
         dfdx += dim*f/x
-    print(dfdx)
+    # print(dfdx)
     return dfdx
 
 def L(t, u, p):
@@ -75,12 +75,12 @@ if __name__ == "__main__":
         'bc_left': { 
             'd': lambda t: 0,   # Neumann coefficient, Can be time-dependent
             'k': lambda t: 1,   # Dirichlet coefficient, Can be time-dependent
-            'df': lambda u, t: 0, # Non-linear forcing coefficient, Can be time-dependent
+            'df': lambda u, t: 0, # time-derivative of the non-linear forcing coefficient, Can be time-dependent
         },
         'bc_right': { 
             'd': lambda t: 1,   # Neumann coefficient, Can be time-dependent
             'k': lambda t: 0,   # Dirichlet coefficient, Can be time-dependent
-            'df': lambda u, t: 0, # Non-linear forcing coefficient, Can be time-dependent
+            'df': lambda u, t: 0, # time derivative of the non-linear forcing coefficient, Can be time-dependent
         },
         # Initial condition
         'ic': lambda x: x>0
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     # Grid spacing
     x = p['x']
     t = p['t']
-
+    
     # Solve the heat equation
     try:
         sol = solve_ivp(L, (t[0], t[-1]), p['ic'](x), method='BDF', args=(p,), t_eval=t) 
